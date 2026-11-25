@@ -1,0 +1,315 @@
+{
+  "schema": 1,
+  "round": 1,
+  "slug": "architecture",
+  "docFile": "docs/reviews/architecture/doc.md",
+  "submittedAt": "2026-11-14T03:12:48.438Z",
+  "docHash": "sha256:647e613359ba7e02f203b113c4b4acc235a006650df0f06df8ee410d1a604cdc",
+  "overall": "Add some more diagrams to understand the low level algorithms and choices. ",
+  "comments": [
+    {
+      "id": "c1",
+      "startLine": 70,
+      "endLine": 75,
+      "quote": "```mermaid flowchart LR Pi[Raspberry Pi 5, aarch64, CPU<br/>repo, DVC, harvesting, lang-ID,<br/>MinHash, DSU, DuckDB, API judges, reports] GPU[RTX 5060 Ti 16 G…",
+      "docHash": "sha256:647e613359ba7e02f203b113c4b4acc235a006650df0f06df8ee410d1a604cdc",
+      "text": "This is overkill and we only know it you and I, if I load on the RTX 5060 Ti box this will not be respected since I will also develop this, please cut and just add small mentions on the compute topology",
+      "createdAt": "2026-11-14T02:52:49.307Z"
+    },
+    {
+      "id": "c2",
+      "startLine": 79,
+      "endLine": 79,
+      "quote": "- Every CPU stage must run on aarch64. vLLM, bitsandbytes and CUDA torch are **GPU-box only**; the Pi installs CPU torch.",
+      "docHash": "sha256:647e613359ba7e02f203b113c4b4acc235a006650df0f06df8ee410d1a604cdc",
+      "text": "No, they could also run on the GPU box, good to have the CPU tests here but we are not splitting responsibilities between machines",
+      "createdAt": "2026-11-14T02:53:31.003Z"
+    },
+    {
+      "id": "c3",
+      "startLine": 91,
+      "endLine": 91,
+      "quote": "| Environment | uv + Docker (CUDA 12.8) | uv with lockfile and per-platform torch sources; Docker deferred | Two machines with different architectures; uv mark…",
+      "docHash": "sha256:647e613359ba7e02f203b113c4b4acc235a006650df0f06df8ee410d1a604cdc",
+      "text": "Use docker on GPU box",
+      "createdAt": "2026-11-14T02:54:04.964Z"
+    },
+    {
+      "id": "c4",
+      "startLine": 93,
+      "endLine": 93,
+      "quote": "| Contracts | pydantic + pandera everywhere | pydantic for records; pandera only at the four stage boundaries (rules, messages, pairs, labels) | Validation whe…",
+      "docHash": "sha256:647e613359ba7e02f203b113c4b4acc235a006650df0f06df8ee410d1a604cdc",
+      "text": "I like trimmed one but let's check if we are losing something important by taking this decision",
+      "createdAt": "2026-11-14T02:55:22.134Z"
+    }
+  ],
+  "answers": [
+    {
+      "id": "config-system",
+      "type": "single",
+      "prompt": "Which configuration system for seeds, ablations and pipeline parameters?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "DVC params.yaml + dvc exp (trimmed, recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "tracking",
+      "type": "single",
+      "prompt": "Which experiment tracker?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "DVCLive (recommended, no server)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "docker",
+      "type": "single",
+      "prompt": "Docker for the GPU box?",
+      "selected": [],
+      "other": "Let me check, do the draft and I configure docker on the GPU box",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "eval-design",
+      "type": "single",
+      "prompt": "Which evaluation design carries the headline numbers?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "B. Fixed held-out test + 5-fold grouped CV inside training (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "eval-secondary",
+      "type": "multi",
+      "prompt": "Which secondary splits should be reported (all are descriptive, not acceptance criteria)?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Leave-one-platform-out"
+        },
+        {
+          "index": 1,
+          "label": "Leave-cluster-out"
+        },
+        {
+          "index": 2,
+          "label": "Cross-language transfer (EN train, ES test)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "xling-dedup",
+      "type": "single",
+      "prompt": "How should translation duplicates be detected?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Embeddings + exact kNN (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "xling-embedder",
+      "type": "single",
+      "prompt": "Which embedder for translation duplicates and rule-equivalence candidates?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "LaBSE (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "dsu-edges",
+      "type": "single",
+      "prompt": "How should equivalence edges for the rule DSU be generated?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Embedding candidates + mutual entailment + manual queue (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "context-k",
+      "type": "single",
+      "prompt": "How much conversational context goes into the classifier and the judge?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "K=1 explicit parent; preceding window K≤3 as ablation (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "judge-throughput",
+      "type": "multi",
+      "prompt": "Which throughput measures do we adopt for the judge cascade?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Prefix caching with pairs sorted by ruleset"
+        },
+        {
+          "index": 1,
+          "label": "Shuffled options placed after the ruleset"
+        },
+        {
+          "index": 4,
+          "label": "Order Stage-2 API calls by ruleset for provider caching"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "encoder-candidates",
+      "type": "multi",
+      "prompt": "Which encoders go into the week-2 comparison (XLM-R base is the main model either way)?",
+      "selected": [
+        {
+          "index": 1,
+          "label": "mDeBERTa-v3-base"
+        },
+        {
+          "index": 2,
+          "label": "mDeBERTa-v3-base fine-tuned on XNLI"
+        },
+        {
+          "index": 3,
+          "label": "mmBERT-base"
+        },
+        {
+          "index": 4,
+          "label": "XLM-R large as an upper reference"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "ordinal-loss",
+      "type": "single",
+      "prompt": "Which ordinal loss for the severity head?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Own cumulative-link implementation (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "langid",
+      "type": "single",
+      "prompt": "Which language identifier?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "lingua-py, restricted set + confidence threshold (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "dialect-method",
+      "type": "single",
+      "prompt": "How is the English dialect slice built?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "TwitterAAE + multi-VALUE counterfactuals"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "identity-pairs",
+      "type": "multi",
+      "prompt": "Which sources for the identity-mention slice?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Hand-written minimal pairs (proposal)"
+        },
+        {
+          "index": 1,
+          "label": "Multilingual HateCheck (ES) + HateCheck (EN), filtered per ruleset"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "slice-metrics",
+      "type": "single",
+      "prompt": "How are slice metrics and their intervals computed?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Fairlearn MetricFrame + own cluster bootstrap (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "annotation-split",
+      "type": "single",
+      "prompt": "How do Label Studio and Gradio divide the annotation work?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Label Studio for message labels, Gradio for review queues and duration judgments (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    }
+  ],
+  "mac": "hmac-sha256:e529e7855346a93d5f6a90b4bbcb2f7b3ebbd615e07f3c2fa2047c833bc548f2"
+}

@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "round": 2,
+  "slug": "architecture",
+  "docFile": "docs/reviews/architecture/doc.md",
+  "submittedAt": "2026-11-14T04:17:21.812Z",
+  "docHash": "sha256:05b2585f9ab41aaddabb7e6ba449dd3e596d271697bd8a2d610da1580578f2ea",
+  "overall": "",
+  "comments": [],
+  "answers": [
+    {
+      "id": "gpu-sharing",
+      "type": "single",
+      "prompt": "How do the vLLM judge and training share the 16 GB card?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Never concurrent, compose profiles take turns (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "contract-boundaries",
+      "type": "single",
+      "prompt": "How are the data contracts set up?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Five pandera boundaries + split invariant suite (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "stage2-agreement",
+      "type": "single",
+      "prompt": "In the Stage-2 judge, who must agree, and what is the decisive third pass?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "A. Stage-2 judges agree; Stage 1 breaks ties (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "encoder-switch-rule",
+      "type": "single",
+      "prompt": "If a challenger beats XLM-R base in the week-3 CV, what happens?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Switch only if it wins on CV QWK with a paired CI excluding zero and is within the 300M cap; record as a deviation (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "engine-v1-escalation",
+      "type": "single",
+      "prompt": "Can prior violations escalate a V1 verdict into a timeout?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "No, the engine acts only on V2 and V3 (recommended, matches the proposal's output set)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    },
+    {
+      "id": "engine-precedence",
+      "type": "single",
+      "prompt": "When the cited rule has both a discretion flag and a sanction hint, which wins?",
+      "selected": [
+        {
+          "index": 0,
+          "label": "Discretion flag, route to human review (recommended)"
+        }
+      ],
+      "other": "",
+      "text": "",
+      "answered": true
+    }
+  ],
+  "mac": "hmac-sha256:04b631cf1f6253e78fd3f042b2b0431490f4de6df7fbb810a06f4103303bf6fe"
+}
