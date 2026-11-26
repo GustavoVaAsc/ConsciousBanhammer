@@ -10,3 +10,5 @@ All notable changes to this project are recorded here. The format follows [Keep 
 - `docs/dependencies.md` dependency register.
 - `docs/reviews/architecture/doc.md`: architecture assessment, decisions D1–D32.
 - `docs/workstreams.md`: work breakdown along S1–S7 with dependencies and parallelism.
+- Project bootstrap: `pyproject.toml` (Python 3.12, uv, per-platform torch sources for linux x86_64 CUDA 12.8 and linux aarch64 CPU, `gpu` extra, `dev` group, ruff, mypy, pytest and import-linter configuration), `uv.lock`, `.gitignore`, `.env.example`, root `conftest.py` registering the `gpu` and `integration` markers.
+- import-linter contract that `core` imports from no other subpackage.

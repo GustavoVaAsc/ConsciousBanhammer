@@ -25,6 +25,7 @@ Python 3.12, managed with uv. These are the target commands; they work once `pyp
 | Lint | `uv run ruff check .` |
 | Format check | `uv run ruff format --check .` |
 | Type check | `uv run mypy src` (authoritative run: the `work` container, see H8) |
+| Import contracts | `uv run lint-imports` |
 | Unit tests, any machine | `uv run pytest -m "not gpu and not integration"` |
 | Unit + GPU tests, GPU box | `uv run pytest -m "not integration"` |
 | Integration tests (real backends, may spend API budget) | `uv run pytest -m integration`, only when asked |
@@ -36,7 +37,7 @@ pytest runs with `--strict-markers`, so an unknown marker fails.
 
 A change is finished only when all of these hold:
 
-1. Lint, format check, type check and the unit tests pass.
+1. Lint, format check, type check, import contracts and the unit tests pass.
 2. New or changed behaviour has tests.
 3. **`CHANGELOG.md` has an entry** under `## [Unreleased]` in one of the Keep a Changelog sections: Added, Changed, Deprecated, Removed, Fixed, Security. Commits typed `refactor:`, `test:`, `style:` or `chore:`, which by definition do not change behaviour, may skip the entry; every other commit needs one.
 4. **This file is updated** when the change adds or alters a command, a top-level directory or subpackage, a dependency, a rule here, or an architecture decision.
