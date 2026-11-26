@@ -1,0 +1,116 @@
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13"]
+build-backend = "uv_build"
+
+[project]
+name = "banhammer"
+version = "0.1.0"
+description = "Rule-conditioned graduated content moderation in Spanish and English."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.5",
+    "pydantic>=2.14",
+    "pyyaml>=6.0",
+    "torch>=2.11,<2.12",
+]
+
+[project.optional-dependencies]
+gpu = ["bitsandbytes>=0.50", "peft>=0.22", "trl>=1.19"]
+
+[dependency-groups]
+dev = [
+    "detect-secrets>=1.5",
+    "dvc>=3.67",
+    "hypothesis>=6.170",
+    "import-linter>=2.17",
+    "mypy>=2.4",
+    "pre-commit>=4.7",
+    "pytest>=9.2",
+    "ruff>=0.17",
+    "types-pyyaml>=6.0",
+]
+
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128", marker = "platform_machine == 'x86_64'" },
+    { index = "pytorch-cpu", marker = "platform_machine == 'aarch64'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "C90", "SIM", "RET", "PTH", "PL", "ERA",
+    "T20", "BLE", "S", "TRY", "PERF", "ARG", "ANN", "TID", "PGH", "D", "RUF",
+]
+ignore = ["TRY003", "D206", "D300", "D105", "D107", "D417"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 5
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = ["X", "X_*", "F"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004", "D", "ARG", "ANN", "RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+enable_error_code = ["ignore-without-code"]
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+module = ["peft", "peft.*", "trl", "trl.*", "bitsandbytes", "bitsandbytes.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --import-mode=importlib"
+testpaths = ["tests"]
+pythonpath = ["scripts", "tests"]
+
+[tool.importlinter]
+root_package = "banhammer"
+
+[[tool.importlinter.contracts]]
+name = "core imports from no other subpackage"
+type = "layers"
+containers = ["banhammer"]
+layers = [
+    "(rules) : (messages) : (pairing) : (labeling) : (annotation) : (models) : (policy) : (evaluation)",
+    "core",
+]

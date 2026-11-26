@@ -1,0 +1,4 @@
+core:
+  seed: 42
+  data_dir: data
+  models_dir: models

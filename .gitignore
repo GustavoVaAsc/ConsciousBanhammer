@@ -1,0 +1,31 @@
+# Environments and secrets
+.venv/
+.env
+.env.*
+!.env.example
+
+# Python caches and build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data and models live in DVC-tracked directories (params.yaml: core.data_dir, core.models_dir)
+/data/**
+!/data/**/
+!/data/**/*.dvc
+!/data/**/.gitignore
+/models/**
+!/models/**/
+!/models/**/*.dvc
+!/models/**/.gitignore

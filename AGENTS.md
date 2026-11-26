@@ -25,6 +25,7 @@ Python 3.12, managed with uv. These are the target commands; they work once `pyp
 | Lint | `uv run ruff check .` |
 | Format check | `uv run ruff format --check .` |
 | Type check | `uv run mypy src` (authoritative run: the `work` container, see H8) |
+| Import contracts | `uv run lint-imports` |
 | Unit tests, any machine | `uv run pytest -m "not gpu and not integration"` |
 | Unit + GPU tests, GPU box | `uv run pytest -m "not integration"` |
 | Integration tests (real backends, may spend API budget) | `uv run pytest -m integration`, only when asked |
@@ -36,7 +37,7 @@ pytest runs with `--strict-markers`, so an unknown marker fails.
 
 A change is finished only when all of these hold:
 
-1. Lint, format check, type check and the unit tests pass.
+1. Lint, format check, type check, import contracts and the unit tests pass.
 2. New or changed behaviour has tests.
 3. **`CHANGELOG.md` has an entry** under `## [Unreleased]` in one of the Keep a Changelog sections: Added, Changed, Deprecated, Removed, Fixed, Security. Commits typed `refactor:`, `test:`, `style:` or `chore:`, which by definition do not change behaviour, may skip the entry; every other commit needs one.
 4. **This file is updated** when the change adds or alters a command, a top-level directory or subpackage, a dependency, a rule here, or an architecture decision.
@@ -45,11 +46,11 @@ A change is finished only when all of these hold:
 `pre-commit` (dev group) is set up with the first code commit. It runs:
 
 - ruff and ruff-format;
-- mypy as a local hook (`entry: uv run mypy src`, `language: system`, `pass_filenames: false`), so it sees the project environment;
+- mypy and import-linter as local hooks (`entry: uv run mypy src` and `entry: uv run lint-imports`, `language: system`, `pass_filenames: false`), so they see the project environment. They run in pre-commit rather than in a test because both are whole-project checks that need no fixtures, and a hook fails the commit before the code is shared;
 - `detect-secrets` and `nbstripout`;
-- a commit-msg hook that rejects a commit touching `src/` without a `CHANGELOG.md` change, unless its type is one of the exempt types in item 3. Install it with `pre-commit install --hook-type pre-commit --hook-type commit-msg`.
+- a commit-msg hook that rejects a commit touching `src/` without a `CHANGELOG.md` change, unless its type is one of the exempt types in item 3. It checks the staged files only, so an `--amend` that adds `src/` files must stage the `CHANGELOG.md` entry again. Install it with `pre-commit install --hook-type pre-commit --hook-type commit-msg`.
 
-The ruff hook's `rev` is kept equal to the ruff version in `uv.lock`.
+Every hook repo is pinned to a commit SHA with a `# frozen: <tag>` comment (`pre-commit autoupdate --freeze`). The ruff hook's SHA is that of the tag equal to the ruff version in `uv.lock`. detect-secrets flags the SHAs, so `.secrets.baseline` records them as audited false positives (`is_secret: false`); after an autoupdate, rescan with `detect-secrets scan --baseline .secrets.baseline` and mark the new SHAs the same way.
 
 `git commit --no-verify` is not allowed.
 
@@ -80,13 +81,13 @@ Formatter pragmas (`# fmt: off`, `# fmt: skip`) are not allowed. Commented-out c
 
 Rationale that has no external source goes into a name (`stable_log_softmax`, `pad_to_multiple_of_eight`) or into the second paragraph of the docstring.
 
-**Enforcement:** `tests/test_hygiene.py`, part of the first code commit, scans every `.py` file in `src/` and `tests/` with `tokenize` and `ast`. It fails on:
+**Enforcement:** `tests/test_hygiene.py`, part of the first code commit, scans every `.py` file in `src/`, `tests/`, `scripts/` and the repository root (`conftest.py`) with `tokenize` and `ast`. It fails on:
 
-- any comment outside the forms above;
-- a string statement that is neither a docstring nor an attribute docstring;
+- any comment outside the forms above; a cited why must stand alone, so one followed by a further ` # ` comment fails;
+- a string or bytes statement that is neither a docstring nor an attribute docstring;
 - `while True` (H4);
-- in `src/` only, a module that defines public top-level functions and no classes but lacks the `Functional module:` line (H3); `__init__.py` is exempt;
-- the import rules of H16 that import-linter does not cover.
+- in `src/` only, a module that defines public top-level functions and no classes (also counting those under a top-level `if` or `try`) but lacks the `Functional module:` line (H3); `__init__.py` is exempt;
+- the import rules of H16 that import-linter does not cover. They apply to `src/` and to tests: a test under `tests/<pkg>/` counts as part of subpackage `<pkg>`.
 
 ### H2. Single Responsibility Principle
 
@@ -234,9 +235,10 @@ src/banhammer/
   models/        S5 cross-encoder, flat baseline, Llama Guard QLoRA, keyword matcher
   policy/        S6 policy engine
   evaluation/    S7 metrics, bootstrap, slices, fairness
+scripts/         pre-commit helper scripts (commit-msg changelog gate); tests/scripts/ covers them
 tests/           mirrors src/banhammer/
 notebooks/       exploration only
-docs/            proposal, reviews, dependencies.md
+docs/            proposal, reviews, dependencies.md, workstreams.md
 Dockerfile       project image for the GPU box (D3; installs with uv sync --locked)
 compose.yaml     judge and work services, build context is the repository root
 params.yaml      tunable values (DVC)
