@@ -1,0 +1,37 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 9026c9127e153371d7a78dfcb0c45ae2046a3d10  # frozen: v0.17.6
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: 01886c8a910c64595c47f186ca1ffc0b77fa5458  # frozen: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: ^(uv\.lock|dvc\.lock)$
+  - repo: https://github.com/kynan/nbstripout
+    rev: 512fa4ac6e4674f3a748e7dd5a546c037ec39edf  # frozen: 0.9.2
+    hooks:
+      - id: nbstripout
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: lint-imports
+        name: import-linter
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: changelog-entry
+        name: changelog entry for src changes
+        entry: uv run python scripts/check_changelog_entry.py
+        language: system
+        stages: [commit-msg]

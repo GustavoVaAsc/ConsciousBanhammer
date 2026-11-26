@@ -46,11 +46,11 @@ A change is finished only when all of these hold:
 `pre-commit` (dev group) is set up with the first code commit. It runs:
 
 - ruff and ruff-format;
-- mypy as a local hook (`entry: uv run mypy src`, `language: system`, `pass_filenames: false`), so it sees the project environment;
+- mypy and import-linter as local hooks (`entry: uv run mypy src` and `entry: uv run lint-imports`, `language: system`, `pass_filenames: false`), so they see the project environment. They run in pre-commit rather than in a test because both are whole-project checks that need no fixtures, and a hook fails the commit before the code is shared;
 - `detect-secrets` and `nbstripout`;
-- a commit-msg hook that rejects a commit touching `src/` without a `CHANGELOG.md` change, unless its type is one of the exempt types in item 3. Install it with `pre-commit install --hook-type pre-commit --hook-type commit-msg`.
+- a commit-msg hook that rejects a commit touching `src/` without a `CHANGELOG.md` change, unless its type is one of the exempt types in item 3. It checks the staged files only, so an `--amend` that adds `src/` files must stage the `CHANGELOG.md` entry again. Install it with `pre-commit install --hook-type pre-commit --hook-type commit-msg`.
 
-The ruff hook's `rev` is kept equal to the ruff version in `uv.lock`.
+Every hook repo is pinned to a commit SHA with a `# frozen: <tag>` comment (`pre-commit autoupdate --freeze`). The ruff hook's SHA is that of the tag equal to the ruff version in `uv.lock`. detect-secrets flags the SHAs, so `.secrets.baseline` records them as audited false positives (`is_secret: false`); after an autoupdate, rescan with `detect-secrets scan --baseline .secrets.baseline` and mark the new SHAs the same way.
 
 `git commit --no-verify` is not allowed.
 
@@ -235,6 +235,7 @@ src/banhammer/
   models/        S5 cross-encoder, flat baseline, Llama Guard QLoRA, keyword matcher
   policy/        S6 policy engine
   evaluation/    S7 metrics, bootstrap, slices, fairness
+scripts/         pre-commit helper scripts (commit-msg changelog gate); tests/scripts/ covers them
 tests/           mirrors src/banhammer/
 notebooks/       exploration only
 docs/            proposal, reviews, dependencies.md, workstreams.md
