@@ -8,9 +8,13 @@ version = "0.1.0"
 description = "Rule-conditioned graduated content moderation in Spanish and English."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "huggingface-hub>=2.4.0",
     "numpy>=2.5",
+    "pandera[polars]>=0.36.0",
+    "polars>=2.2.0",
     "pydantic>=2.14",
     "pyyaml>=6.0",
+    "sentence-transformers>=6.3.0",
     "torch>=2.11,<2.12",
 ]
 
@@ -97,6 +101,10 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = ["peft", "peft.*", "trl", "trl.*", "bitsandbytes", "bitsandbytes.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["huggingface_hub.utils"]
+implicit_reexport = true
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --import-mode=importlib"

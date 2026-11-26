@@ -156,7 +156,7 @@ The test: a value is a **fixed fact** if changing it would change the meaning of
 ### H8. Types and data
 
 - Type hints on every function, method and class attribute. mypy runs with `strict = true`, `enable_error_code = ["ignore-without-code"]`, and the pydantic plugin (the pandera plugin too if pandera's own typing needs it). Ruff `ANN401` bans explicit `Any` except where a third-party signature forces it, which needs a `# noqa: ANN401` with a cited reason.
-- Third-party libraries without stubs get a per-module `ignore_missing_imports` override in `pyproject.toml`, never a global loosening. The packages in the `gpu` extra (`peft`, `trl`, `bitsandbytes`) are the only ones overridden for being absent on the Pi.
+- Third-party libraries without stubs get a per-module `ignore_missing_imports` override in `pyproject.toml`, never a global loosening. The packages in the `gpu` extra (`peft`, `trl`, `bitsandbytes`) are the only ones overridden for being absent on the Pi. A per-module `implicit_reexport = true` override is allowed only where a library exposes a public name through a re-export that mypy strict does not see; today that is `huggingface_hub.utils` (`filter_repo_objects`).
 - The authoritative type check runs in the `work` container, which has the full environment. On the Pi it must also pass.
 - Records that cross a module boundary or come from outside (files, HTTP, judges) are **pydantic models** with `frozen=True, extra="forbid"`. Internal value objects that never leave a module may be frozen dataclasses. Closed sets are `Enum`s. No loose dicts crossing module boundaries.
 - The five D28 boundary artifacts (rules, canonical clusters, messages, pairs with folds, labels) are Parquet files with a pandera schema in the subpackage that owns them. Other stage outputs (embeddings, call cache, predictions, metrics, checkpoints) use the format that fits them. If they are records, they are typed with pydantic.
@@ -229,7 +229,7 @@ Notebooks live in `notebooks/` and are for exploration only. They are excluded f
 
 ```
 src/banhammer/
-  core/          constants, errors, settings, records, seeding
+  core/          constants, errors, settings, records, seeding, union-find, embedder, model snapshot, neighbour search
   rules/         S1 rule corpus: harvest, atomize, canonicalize
   messages/      S2 message pool: ingest, language ID, dedup, sampling
   pairing/       S3 pairs, folds, split invariants

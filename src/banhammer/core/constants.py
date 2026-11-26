@@ -6,10 +6,16 @@ from types import MappingProxyType
 
 PARAMS_FILE_NAME = "params.yaml"
 CORE_SECTION = "core"
+EMBEDDER_SECTION = "embedder"
 
 NUMPY_SEED_MODULUS = 2**32
 SEED_LIMIT = 2**63
 STREAM_KEY_BYTES = 8
+
+EMBEDDING_MATRIX_NDIM = 2
+UNIT_NORM_TOLERANCE = 1e-3
+COMMIT_HASH_PATTERN = r"^[0-9a-f]{40}$"
+MODEL_SNAPSHOT_PATTERNS = ("*.safetensors", "*.json", "*.txt")
 
 SEVERITY_MIN = 0
 SEVERITY_MAX = 3
