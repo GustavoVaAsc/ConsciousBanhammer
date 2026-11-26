@@ -1,0 +1,88 @@
+x-hardened: &hardened
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  judge:
+    <<: *hardened
+    image: vllm/vllm-openai:v0.34.0@sha256:20fdb089454afbb324efa4110a2c025ff7b27cc1a086e07aa580b18df8ad1ce1
+    profiles: ["judge"]
+    restart: "no"
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    networks: [judge_net]
+    environment:
+      - HOME=/tmp
+      - USER=vllm
+      - HF_HOME=/hf
+      - HF_HUB_OFFLINE=1
+      - HF_HUB_DISABLE_TELEMETRY=1
+      - VLLM_NO_USAGE_STATS=1
+      - DO_NOT_TRACK=1
+      - VLLM_API_KEY=${VLLM_API_KEY:-}
+    entrypoint:
+      - sh
+      - -c
+      - 'test "$${#VLLM_API_KEY}" -ge 32 || { echo "VLLM_API_KEY must be set in .env (32+ characters)" >&2; exit 1; }; exec vllm serve "$$@"'
+      - sh
+    command:
+      - Qwen/Qwen2.5-7B-Instruct-AWQ
+      - --revision=b25037543e9394b818fdfca67ab2a00ecc7dd641  # pragma: allowlist secret
+      - --tokenizer-revision=b25037543e9394b818fdfca67ab2a00ecc7dd641  # pragma: allowlist secret
+      - --generation-config=vllm
+      - --max-model-len=8192
+      - --gpu-memory-utilization=0.85
+      - --enable-prefix-caching
+      - --disable-fastapi-docs
+    volumes: ["${HF_HOME:-${HOME}/.cache/huggingface}:/hf:ro"]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 1200s
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+  judge-proxy:
+    <<: *hardened
+    image: nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+    profiles: ["judge"]
+    restart: "no"
+    depends_on:
+      judge:
+        condition: service_healthy
+    networks: [judge_net, default]
+    ports: ["127.0.0.1:8000:8080"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    volumes: ["./docker/judge-proxy.conf:/etc/nginx/conf.d/default.conf:ro"]
+  work:
+    <<: *hardened
+    build:
+      context: .
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    image: banhammer-work:local
+    profiles: ["train"]
+    restart: "no"
+    shm_size: 8gb
+    volumes:
+      - .:/workspace
+      - ./.git:/workspace/.git:ro
+      - /dev/null:/workspace/.env:ro
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/home/work/.cache/huggingface
+    environment:
+      - JUDGE_URL=http://judge-proxy:8080/v1
+      - HF_HUB_DISABLE_TELEMETRY=1
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+
+networks:
+  judge_net:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
