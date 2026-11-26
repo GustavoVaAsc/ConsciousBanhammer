@@ -29,7 +29,10 @@ Python 3.12, managed with uv. These are the target commands; they work once `pyp
 | Unit tests, any machine | `uv run pytest -m "not gpu and not integration"` |
 | Unit + GPU tests, GPU box | `uv run pytest -m "not integration"` |
 | Integration tests (real backends, may spend API budget) | `uv run pytest -m integration`, only when asked |
-| Pipeline | `uv run dvc repro` / `uv run dvc exp run` |
+| Pipeline | `uv run dvc repro` / `uv run dvc exp run` (`dvc exp run` on the host only: `.git` is read-only in `work`) |
+| Judge and its proxy on the GPU box (start / stop, D27) | `docker compose --profile judge up -d --wait --wait-timeout 1500` / `docker compose --profile judge down` |
+| Build the `work` image | `docker compose --profile train build work` |
+| Run a command in `work` | `docker compose --profile train run --rm work <cmd>` |
 
 pytest runs with `--strict-markers`, so an unknown marker fails.
 
@@ -238,7 +241,8 @@ src/banhammer/
 scripts/         pre-commit helper scripts (commit-msg changelog gate); tests/scripts/ covers them
 tests/           mirrors src/banhammer/
 notebooks/       exploration only
-docs/            proposal, reviews, dependencies.md, workstreams.md
+docs/            proposal, reviews, dependencies.md, docker.md, workstreams.md
+docker/          judge reverse-proxy configuration (nginx)
 Dockerfile       project image for the GPU box (D3; installs with uv sync --locked)
 compose.yaml     judge and work services, build context is the repository root
 params.yaml      tunable values (DVC)

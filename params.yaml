@@ -2,3 +2,9 @@ core:
   seed: 42
   data_dir: data
   models_dir: models
+judge:
+  model: Qwen/Qwen2.5-7B-Instruct-AWQ
+  revision: b25037543e9394b818fdfca67ab2a00ecc7dd641  # pragma: allowlist secret
+  tokenizer_revision: b25037543e9394b818fdfca67ab2a00ecc7dd641  # pragma: allowlist secret
+  max_model_len: 8192
+  gpu_memory_utilization: 0.85
