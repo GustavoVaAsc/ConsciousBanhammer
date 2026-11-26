@@ -214,7 +214,7 @@ Notebooks live in `notebooks/` and are for exploration only. They are excluded f
 - **Polars and DuckDB.** Prefer lazy frames and expressions. SQL is parameterized; never build it with f-strings from data. No `.to_pandas()` on the full message pool.
 - **Language model calls.** Every judge call goes through the call cache (D24), with a timeout, bounded retries and the budget stop. Every HTTP client sets an explicit timeout.
 - **Imports.**
-  - `core` imports from no other subpackage. This is enforced by an import-linter `layers` contract (dev group).
+  - `core` imports from no other subpackage, and `embeddings` imports only `core`. This is enforced by an import-linter `layers` contract (dev group): `core` is the bottom layer, `embeddings` sits above it, and the pipeline subpackages above that.
   - Subpackages import each other only through their public `__init__` exports, never another non-core subpackage's `constants.py` or private modules. `core` modules, `core.constants` included, are importable everywhere. This is enforced by the hygiene test.
   - No relative imports beyond the current package (ruff `TID252`).
   - Imports of `gpu`-extra packages may sit inside functions with `# noqa: PLC0415` and the cited why on the line above (H1).
@@ -229,7 +229,8 @@ Notebooks live in `notebooks/` and are for exploration only. They are excluded f
 
 ```
 src/banhammer/
-  core/          constants, errors, settings, records, seeding, union-find, embedder, model snapshot, neighbour search
+  core/          constants, errors, settings, records, seeding, union-find, model snapshot (the one safe path for Hugging Face downloads)
+  embeddings/    shared LaBSE embedder and exact neighbour search (D13-D15)
   rules/         S1 rule corpus: harvest, atomize, canonicalize
   messages/      S2 message pool: ingest, language ID, dedup, sampling
   pairing/       S3 pairs, folds, split invariants

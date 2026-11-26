@@ -9,9 +9,9 @@ import torch
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
-from banhammer.core.embedding import EmbedderSettings
-from banhammer.core.errors import EmbeddingError
 from banhammer.core.model_snapshot import download_snapshot
+from banhammer.embeddings.errors import EmbeddingError
+from banhammer.embeddings.settings import EmbedderSettings
 
 
 class SentenceTransformerEmbedder:

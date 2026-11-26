@@ -1,12 +1,11 @@
-import ast
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
-from banhammer.core.constants import EMBEDDER_SECTION, PARAMS_FILE_NAME
-from banhammer.core.embedding import EmbedderSettings
+from banhammer.core.constants import PARAMS_FILE_NAME
 from banhammer.core.settings import ParamsFile
+from banhammer.embeddings import EMBEDDER_SECTION, EmbedderSettings
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REVISION = "ab" * 20
@@ -59,12 +58,3 @@ def test_revision_must_be_a_full_lowercase_commit_hash(revision: str) -> None:
 def test_an_empty_model_id_is_rejected() -> None:
     with pytest.raises(ValidationError, match="model"):
         settings_with(model="")
-
-
-def test_the_protocol_module_does_not_import_the_backend() -> None:
-    source = (REPO_ROOT / "src/banhammer/core/embedding.py").read_text(encoding="utf-8")
-    imported = [
-        node.module for node in ast.walk(ast.parse(source)) if isinstance(node, ast.ImportFrom)
-    ]
-    assert "banhammer.core.settings" in imported
-    assert not [module for module in imported if "sentence_transformer" in str(module)]

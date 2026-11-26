@@ -5,9 +5,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from numpy.typing import NDArray
 
-from banhammer.core.errors import NeighbourSearchError
-from banhammer.core.neighbours import ExactNeighbourSearch, NeighbourPairs
 from banhammer.core.union_find import UnionFind
+from banhammer.embeddings import ExactNeighbourSearch, NeighbourPairs, NeighbourSearchError
 
 CPU = torch.device("cpu")
 

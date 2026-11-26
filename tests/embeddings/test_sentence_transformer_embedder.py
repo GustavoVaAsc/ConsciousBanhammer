@@ -7,10 +7,13 @@ import pytest
 import torch
 from numpy.typing import NDArray
 
-from banhammer.core import sentence_transformer_embedder
-from banhammer.core.embedding import Embedder, EmbedderSettings
-from banhammer.core.errors import EmbeddingError
-from banhammer.core.sentence_transformer_embedder import SentenceTransformerEmbedder
+from banhammer.embeddings import (
+    Embedder,
+    EmbedderSettings,
+    EmbeddingError,
+    SentenceTransformerEmbedder,
+    sentence_transformer_embedder,
+)
 from embedder_double import FakeEmbedder
 
 REVISION = "ab" * 20

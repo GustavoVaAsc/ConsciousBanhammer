@@ -12,8 +12,8 @@ import numpy as np
 import torch
 from numpy.typing import NDArray
 
-from banhammer.core.constants import EMBEDDING_MATRIX_NDIM, UNIT_NORM_TOLERANCE
-from banhammer.core.errors import NeighbourSearchError
+from banhammer.embeddings.constants import EMBEDDING_MATRIX_NDIM, UNIT_NORM_TOLERANCE
+from banhammer.embeddings.errors import NeighbourSearchError
 
 
 @dataclass(frozen=True)
