@@ -4,10 +4,9 @@ import numpy as np
 import pytest
 import torch
 
-from banhammer.core.constants import EMBEDDER_SECTION, PARAMS_FILE_NAME
-from banhammer.core.embedding import EmbedderSettings
-from banhammer.core.sentence_transformer_embedder import SentenceTransformerEmbedder
+from banhammer.core.constants import PARAMS_FILE_NAME
 from banhammer.core.settings import ParamsFile
+from banhammer.embeddings import EMBEDDER_SECTION, EmbedderSettings, SentenceTransformerEmbedder
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

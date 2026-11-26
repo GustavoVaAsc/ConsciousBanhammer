@@ -115,10 +115,11 @@ pythonpath = ["scripts", "tests"]
 root_package = "banhammer"
 
 [[tool.importlinter.contracts]]
-name = "core imports from no other subpackage"
+name = "core imports from no other subpackage, embeddings only from core"
 type = "layers"
 containers = ["banhammer"]
 layers = [
     "(rules) : (messages) : (pairing) : (labeling) : (annotation) : (models) : (policy) : (evaluation)",
+    "embeddings",
     "core",
 ]

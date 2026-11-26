@@ -21,13 +21,5 @@ class InvalidKeyError(BanhammerError):
     """A union-find key is not a plain `str` or `int`, or not of the kind the instance holds."""
 
 
-class NeighbourSearchError(BanhammerError):
-    """The neighbour search received an embedding matrix or a parameter it cannot work with."""
-
-
-class EmbeddingError(BanhammerError):
-    """The embedding model cannot report its output dimension."""
-
-
 class ModelSnapshotError(BanhammerError):
     """A model snapshot could not be downloaded at its pinned revision."""
