@@ -236,7 +236,7 @@ src/banhammer/
   evaluation/    S7 metrics, bootstrap, slices, fairness
 tests/           mirrors src/banhammer/
 notebooks/       exploration only
-docs/            proposal, reviews, dependencies.md
+docs/            proposal, reviews, dependencies.md, workstreams.md
 Dockerfile       project image for the GPU box (D3; installs with uv sync --locked)
 compose.yaml     judge and work services, build context is the repository root
 params.yaml      tunable values (DVC)
