@@ -81,13 +81,13 @@ Formatter pragmas (`# fmt: off`, `# fmt: skip`) are not allowed. Commented-out c
 
 Rationale that has no external source goes into a name (`stable_log_softmax`, `pad_to_multiple_of_eight`) or into the second paragraph of the docstring.
 
-**Enforcement:** `tests/test_hygiene.py`, part of the first code commit, scans every `.py` file in `src/` and `tests/` with `tokenize` and `ast`. It fails on:
+**Enforcement:** `tests/test_hygiene.py`, part of the first code commit, scans every `.py` file in `src/`, `tests/`, `scripts/` and the repository root (`conftest.py`) with `tokenize` and `ast`. It fails on:
 
-- any comment outside the forms above;
-- a string statement that is neither a docstring nor an attribute docstring;
+- any comment outside the forms above; a cited why must stand alone, so one followed by a further ` # ` comment fails;
+- a string or bytes statement that is neither a docstring nor an attribute docstring;
 - `while True` (H4);
-- in `src/` only, a module that defines public top-level functions and no classes but lacks the `Functional module:` line (H3); `__init__.py` is exempt;
-- the import rules of H16 that import-linter does not cover.
+- in `src/` only, a module that defines public top-level functions and no classes (also counting those under a top-level `if` or `try`) but lacks the `Functional module:` line (H3); `__init__.py` is exempt;
+- the import rules of H16 that import-linter does not cover. They apply to `src/` and to tests: a test under `tests/<pkg>/` counts as part of subpackage `<pkg>`.
 
 ### H2. Single Responsibility Principle
 
