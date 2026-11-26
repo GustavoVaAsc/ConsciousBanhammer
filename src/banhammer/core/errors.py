@@ -11,3 +11,23 @@ class SettingsError(BanhammerError):
 
 class SettingsDefinitionError(BanhammerError):
     """A settings model gives a field a default, so a key missing from `params.yaml` would pass."""
+
+
+class UnknownKeyError(BanhammerError):
+    """A key was looked up in a union-find that has never seen it."""
+
+
+class InvalidKeyError(BanhammerError):
+    """A union-find key is not a plain `str` or `int`, or not of the kind the instance holds."""
+
+
+class NeighbourSearchError(BanhammerError):
+    """The neighbour search received an embedding matrix or a parameter it cannot work with."""
+
+
+class EmbeddingError(BanhammerError):
+    """The embedding model cannot report its output dimension."""
+
+
+class ModelSnapshotError(BanhammerError):
+    """A model snapshot could not be downloaded at its pinned revision."""
