@@ -196,7 +196,9 @@ name = "banhammer"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "datasketch" },
     { name = "huggingface-hub" },
+    { name = "lingua-language-detector" },
     { name = "numpy" },
     { name = "pandera", extra = ["polars"] },
     { name = "polars" },
@@ -230,7 +232,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bitsandbytes", marker = "extra == 'gpu'", specifier = ">=0.50" },
+    { name = "datasketch", specifier = ">=2.0.0" },
     { name = "huggingface-hub", specifier = ">=2.4.0" },
+    { name = "lingua-language-detector", specifier = ">=2.2.0" },
     { name = "numpy", specifier = ">=2.5" },
     { name = "pandera", extras = ["polars"], specifier = ">=0.36.0" },
     { name = "peft", marker = "extra == 'gpu'", specifier = ">=0.22" },
@@ -547,6 +551,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2b/fd/7d76cc5023b7cdb01e9ca026675392d2385df9f0b836a50c81123b84c514/datasets-5.2.0.tar.gz", hash = "sha256:f4290d4704dfbc99631a578b56912d66b22def53d3f61d246f6ccc129675490e", size = 695308, upload-time = "2026-11-09T21:37:47.386Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ae/22/c92c96de701dd7441f553adaaa480801ff3d37575486ef82df651a45f0ec/datasets-5.2.0-py3-none-any.whl", hash = "sha256:4be9e2882caaf5db13eadc39e93f3da2a995187b99acebac1595bf6c58dfa927", size = 608276, upload-time = "2026-11-09T21:37:45.527Z" },
+]
+
+[[package]]
+name = "datasketch"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/da/ae/bbcdeab67ebfe27747896618bca0f8113e79d534c5af2b06ce6693c981de/datasketch-2.0.0.tar.gz", hash = "sha256:e0570e170f7e64b8d6fb1cc2e4ce36a9f7036c5100167e50a0770addc50558c2", size = 98666, upload-time = "2026-07-05T06:36:30.681Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/df/9e79bf1fb2f660507dbd00d24730d107595a2f599f2524a96344149c95f1/datasketch-2.0.0-py3-none-any.whl", hash = "sha256:aea5ffafcce776e03d085740e78b874e778d779b07ee11ca636ca51b3fef09ed", size = 107247, upload-time = "2026-07-05T06:36:29.222Z" },
 ]
 
 [[package]]
@@ -1129,6 +1146,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/12/7d/cc942cf3088e1544053ec36bd3a8266a755251eeb2c3cb5329eab54c80a3/librt-0.17.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:afa8a6a1916f155e6f35c48d6cb547849af79e07060e36b6aaec1d1c63dc3c7e", size = 623563, upload-time = "2026-11-19T14:08:53.32Z" },
     { url = "https://files.pythonhosted.org/packages/b3/ca/91172e4c888c0bdb7c2976d2220913675c0f8df7154ea566a90aa08a9d54/librt-0.17.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:477051a5c98895a0a6ea67cf33b84618adc10dac28f348efc287e170913097cf", size = 640205, upload-time = "2026-11-19T14:08:55.869Z" },
     { url = "https://files.pythonhosted.org/packages/e3/5e/2d33a4e2bea5f5a30c641c7628770045a39850db4129ecd529015e00222f/librt-0.17.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d5ce86ceb3adedb4f26d8e39de1f96483f4c348c32874deee7622314157f7dcd", size = 671611, upload-time = "2026-11-19T14:09:00.786Z" },
+]
+
+[[package]]
+name = "lingua-language-detector"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/64/b6212bc0eff72d76dd04649c13452318eb2abeafc397ac597242e47e3e07/lingua_language_detector-2.2.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9ac7453c08ab9699706a92f15480ae3d4b66761c15e1577a1ba31d1635780f3a", size = 170325432, upload-time = "2026-03-09T14:24:29.41Z" },
+    { url = "https://files.pythonhosted.org/packages/44/a0/7322a0c50db8f82836ef40b14986dfcfad17bd837bfa5782562fec143bf0/lingua_language_detector-2.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:63d99c7570ba09525f1702e4e4b2362f8f1f7e0a0fba93a3a53d3f322e00659d", size = 170332900, upload-time = "2026-03-09T14:24:40.088Z" },
+    { url = "https://files.pythonhosted.org/packages/47/b5/e6d09c3cf08580088cc85807b1b28ef8b77d8c62d50ed56144a565205787/lingua_language_detector-2.2.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:cd54fe6505b671c0d1e33bf0436e8e9308e8802112eb5ba6fb37d2c5459ab685", size = 170500781, upload-time = "2026-03-09T14:24:51.478Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/f2/ef84cc7f57854838f9b64f1b8aae07ee56827b5538b9609acb72aa6832e5/lingua_language_detector-2.2.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:362fbbc21da68c778f3521f42309d1ed6f54d4bd554a5701bf165419be9cc64b", size = 170586077, upload-time = "2026-03-09T14:25:04.48Z" },
 ]
 
 [[package]]
