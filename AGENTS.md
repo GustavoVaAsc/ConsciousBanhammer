@@ -30,6 +30,7 @@ Python 3.12, managed with uv. These are the target commands; they work once `pyp
 | Unit + GPU tests, GPU box | `uv run pytest -m "not integration"` |
 | Integration tests (real backends, may spend API budget) | `uv run pytest -m integration`, only when asked |
 | Pipeline | `uv run dvc repro` / `uv run dvc exp run` (`dvc exp run` on the host only: `.git` is read-only in `work`) |
+| S2 stages until they are in `dvc.yaml` | `uv run python -m banhammer.messages.stage ingest` (downloads the dataset at the commit pinned in `params.yaml` into `raw_dir/<revision>`, only after the ethics check; it refuses to run while `messages.source.revision` is the all-zero placeholder) then `uv run python -m banhammer.messages.stage build` |
 | Judge and its proxy on the GPU box (start / stop, D27) | `docker compose --profile judge up -d --wait --wait-timeout 1500` / `docker compose --profile judge down` |
 | Build the `work` image | `docker compose --profile train build work` |
 | Run a command in `work` | `docker compose --profile train run --rm work <cmd>` |
@@ -186,7 +187,7 @@ Raise specific exceptions. Each subpackage defines its own in `errors.py`, deriv
 ### H12. Logging, paths and randomness
 
 - Use `logging` through one module-level `logger = logging.getLogger(__name__)`, never `print` (ruff `T20`).
-- Logs and notebooks never contain raw message text or user data; log ids and counts.
+- Logs and notebooks never contain raw message text or user data; log ids and counts. pandera's own errors quote the failing rows, so a boundary frame is validated through a wrapper that reports the check, the column and a count only (`banhammer.messages.validate_frame`), never with `Schema.validate` directly where the error can reach a log.
 - Use `pathlib` for paths (ruff `PTH`). Never hard-code absolute paths; paths are built as described in H7.
 - Randomness is explicit. Seeds come from `params.yaml`, and one seeding helper in `core` seeds Python, NumPy, torch, CUDA and `DataLoader` workers at the start of each stage. Code that draws random numbers receives a `numpy.random.Generator` or `torch.Generator`. Results on the Pi and the GPU box are not expected to match bit for bit.
 
@@ -234,7 +235,7 @@ src/banhammer/
   core/          constants, errors, settings, records, seeding, union-find, atomic file writes, model snapshot (the one safe path for Hugging Face downloads, and the allow-list check every model load runs)
   embeddings/    shared LaBSE embedder and exact neighbour search (D13-D15)
   rules/         S1 rule corpus: curated YAML rulesets, atomize, candidates, canonicalize, review files
-  messages/      S2 message pool: ingest, language ID, dedup, sampling
+  messages/      S2 message pool: ingest (source adapters), language ID, dedup, sampling; stage entry points in `messages/stage.py`
   pairing/       S3 pairs, folds, split invariants
   labeling/      S4 judge cascade, call cache, calibration gate
   annotation/    Label Studio export/import, Gradio review apps (D23)

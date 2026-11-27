@@ -29,3 +29,46 @@ rules:
     revision: b5113eb38ab63efdd7f280f8c144ea8b13f978ce  # pragma: allowlist secret
     batch_size: 32
     max_length: 256
+messages:
+  raw_dir: data/messages/raw
+  output_dir: data/messages
+  source:
+    repo_id: jef1056/discord-data
+    # Proposal 4.6: the dataset terms are verified before use, so no commit is pinned yet; the all-zero value is rejected
+    revision: "0000000000000000000000000000000000000000"
+    allow_patterns:
+      - "*.parquet"
+    etag_timeout: 10
+    columns:
+      message_id: id
+      channel_id: channel_id
+      parent_message_id: reference_id
+      timestamp: timestamp
+      text: content
+      is_bot: is_bot
+  # D19: provisional, to be set on about 300 hand-checked Discord lines
+  language:
+    detector_languages: [en, es, pt, it, fr, ca]
+    min_length: 10
+    confidence: 0.6
+    mixed_confidence: 0.2
+  # D13: translation_threshold is provisional, to be calibrated on about 200 labelled pairs
+  dedup:
+    shingle_size: 5
+    num_perm: 128
+    minhash_seed: 1
+    lsh_recall_weight: 0.95
+    jaccard_threshold: 0.8
+    translation_threshold: 0.85
+    candidate_floor: 0.7
+    k: 5
+    chunk_size: 4096
+    max_group_size_warning: 50
+  calibration:
+    top_count: 100
+    band_count: 100
+    band_half_width: 0.05
+  sampling:
+    max_messages: 50000
+    window_size: 20
+    strata: 10
