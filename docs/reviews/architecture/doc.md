@@ -63,6 +63,7 @@ Status: **final**. No open questions.
 - **Validation.** The proposal has train and held-out rulesets only; D11 adds grouped CV inside training.
 - **Option shuffling.** Options are shuffled per pair but placed after the ruleset (D17).
 - **Encoder.** If a challenger replaces XLM-R base under D30, that is a deviation too.
+- **Judge access.** The 3.1 draft has clients reach vLLM directly on `127.0.0.1:8000`, protected by its API key. vLLM's key guards only the `/v1` routes, so the built setup gives vLLM no published port: it sits on an internal network behind an nginx proxy that publishes `127.0.0.1:8000`, forwards only `/v1/*` and `/health`, and rejects every other path, ambiguous URIs and unexpected `Host` headers. Details in `docs/docker.md`.
 
 ---
 
