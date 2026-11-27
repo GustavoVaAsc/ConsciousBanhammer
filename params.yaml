@@ -8,3 +8,8 @@ judge:
   tokenizer_revision: b25037543e9394b818fdfca67ab2a00ecc7dd641  # pragma: allowlist secret
   max_model_len: 8192
   gpu_memory_utilization: 0.85
+embedder:
+  model: sentence-transformers/LaBSE
+  revision: 836121a0533e5664b21c7aacc5d22951f2b8b25b  # pragma: allowlist secret
+  batch_size: 64
+  max_seq_length: 256

@@ -86,7 +86,7 @@ flowchart TB
   E --> V
 ```
 
-**Compute.** Any stage can run on either machine. The Pi runs the CPU test suite and anything light. Stages that need a GPU (vLLM judge, LaBSE over the full pool, encoder training, QLoRA) run on the 5060 Ti box. The dependency set must therefore resolve on both aarch64 (CPU torch) and x86_64 (CUDA 12.8 torch); section 3.1 shows how.
+**Compute.** Any stage can run on either machine. The Pi runs the CPU test suite and anything light. Stages that need a GPU (vLLM judge, LaBSE over the full pool, encoder training, QLoRA) run on the 5060 Ti box. The dependency set must therefore resolve on both aarch64 (CPU torch) and x86_64 (CUDA 13.2 torch); section 3.1 shows how.
 
 ---
 
@@ -112,7 +112,7 @@ flowchart TB
 Two containers:
 
 - **`judge`** is the official vLLM image. vLLM pins an exact torch build. Keeping it out of the project environment means the training stack's torch never has to match it. The project talks to it over the OpenAI-compatible HTTP API.
-- **`work`** is the project image: CUDA 12.8 runtime, uv, the locked environment, with the repository bind-mounted.
+- **`work`** is the project image: CUDA 13.2 runtime, uv, the locked environment, with the repository bind-mounted.
 
 ```mermaid
 flowchart LR
@@ -127,7 +127,7 @@ flowchart LR
 `Dockerfile` (draft; every `<pin>` is an exact tag you check before building):
 
 ```dockerfile
-FROM nvidia/cuda:<pin: 12.8.x-cudnn-runtime-ubuntu24.04>
+FROM nvidia/cuda:<pin: 13.2.x-cudnn-runtime-ubuntu24.04>
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:<pin> /uv /uvx /bin/
@@ -185,13 +185,13 @@ gpu = ["bitsandbytes", "peft", "trl"]
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu128", marker = "platform_machine == 'x86_64'" },
+  { index = "pytorch-cu132", marker = "platform_machine == 'x86_64'" },
   { index = "pytorch-cpu",   marker = "platform_machine == 'aarch64'" },
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
 explicit = true
 
 [[tool.uv.index]]
