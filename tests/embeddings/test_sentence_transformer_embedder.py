@@ -7,6 +7,7 @@ import pytest
 import torch
 from numpy.typing import NDArray
 
+from banhammer.core.errors import ModelSnapshotError
 from banhammer.embeddings import (
     Embedder,
     EmbedderSettings,
@@ -139,3 +140,12 @@ def test_the_double_normalizes_and_records_its_calls() -> None:
     np.testing.assert_allclose(result, [[0.0, 1.0], [0.6, 0.8]], atol=1e-6)
     assert double.calls == [("b", "a")]
     assert double.encode([]).shape == (0, 2)
+
+
+def test_a_directory_holding_a_pickle_is_rejected_before_the_model_is_loaded(
+    loader: ModelLoader, tmp_path: Path
+) -> None:
+    (tmp_path / "pytorch_model.bin").write_bytes(b"x")
+    with pytest.raises(ModelSnapshotError, match=r"pytorch_model\.bin"):
+        SentenceTransformerEmbedder(SETTINGS, CPU, tmp_path)
+    assert loader.created == []

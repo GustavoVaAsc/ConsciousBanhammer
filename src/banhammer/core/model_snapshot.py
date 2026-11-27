@@ -40,16 +40,43 @@ def download_snapshot(model: str, revision: str) -> Path:
     except (OSError, HFValidationError) as error:
         message = f"cannot download {model} at revision {revision}: {error}"
         raise ModelSnapshotError(message) from error
-    _require_only_allowed_files(model, snapshot)
+    verify_snapshot(snapshot)
     return snapshot
 
 
-def _require_only_allowed_files(model: str, snapshot: Path) -> None:
-    present = [
-        path.relative_to(snapshot).as_posix() for path in snapshot.rglob("*") if not path.is_dir()
-    ]
+def verify_snapshot(snapshot: Path) -> None:
+    """Check that a local model directory holds only safetensors, JSON and text files.
+
+    `download_snapshot` calls it on what it fetched. Code that loads a model from a directory
+    it was handed calls it first, so a hand-made directory cannot skip the allow-list and
+    smuggle in a pickle (H16). A symlink to a directory is rejected, because the walk does not
+    follow it and the files behind it would go unchecked; the Hub cache links files only, so
+    symlinks to files stay allowed (their names are checked like any other).
+
+    Raises:
+        ModelSnapshotError: `snapshot` is not a directory, holds a symlink to a directory, or
+            holds a file outside the allowed patterns.
+    """
+    if not snapshot.is_dir():
+        message = f"model snapshot {snapshot} is not a directory"
+        raise ModelSnapshotError(message)
+    entries = list(snapshot.rglob("*"))
+    linked_directories = sorted(
+        path.relative_to(snapshot).as_posix()
+        for path in entries
+        if path.is_symlink() and path.is_dir()
+    )
+    if linked_directories:
+        message = (
+            f"model snapshot {snapshot} holds symlinks to directories, whose files are not "
+            f"checked: {linked_directories}"
+        )
+        raise ModelSnapshotError(message)
+    present = [path.relative_to(snapshot).as_posix() for path in entries if not path.is_dir()]
     allowed = set(filter_repo_objects(present, allow_patterns=list(MODEL_SNAPSHOT_PATTERNS)))
     unexpected = sorted(set(present) - allowed)
     if unexpected:
-        message = f"snapshot of {model} holds files outside the allowed patterns: {unexpected}"
+        message = (
+            f"model snapshot {snapshot} holds files outside the allowed patterns: {unexpected}"
+        )
         raise ModelSnapshotError(message)

@@ -9,7 +9,7 @@ import torch
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
-from banhammer.core.model_snapshot import download_snapshot
+from banhammer.core.model_snapshot import download_snapshot, verify_snapshot
 from banhammer.embeddings.errors import EmbeddingError
 from banhammer.embeddings.settings import EmbedderSettings
 
@@ -23,7 +23,12 @@ class SentenceTransformerEmbedder:
     def __init__(
         self, settings: EmbedderSettings, device: torch.device, snapshot_dir: Path
     ) -> None:
-        """Load the model stored in `snapshot_dir` onto `device`."""
+        """Load the model stored in `snapshot_dir` onto `device`.
+
+        Raises:
+            ModelSnapshotError: `snapshot_dir` holds a file outside the allowed patterns.
+        """
+        verify_snapshot(snapshot_dir)
         self._settings = settings
         self._model = SentenceTransformer(
             str(snapshot_dir),
