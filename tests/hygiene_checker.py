@@ -28,6 +28,8 @@ TRY_NODES = (ast.Try, ast.TryStar)
 DOCSTRING_OWNERS = (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
 FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 TEST_PACKAGE_DEPTH = 2
+TORCH_LOADERS = frozenset({"torch.load", "torch.serialization.load"})
+WEIGHTS_ONLY_KEYWORD = "weights_only"
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,7 @@ class HygieneChecker:
             *self._unbounded_loops(file, tree),
             *self._functional_module(file, tree),
             *self._subpackage_imports(file, tree),
+            *self._unsafe_torch_loads(file, tree),
         ]
 
     def _comments(self, file: SourceFile) -> Iterator[Violation]:
@@ -156,6 +159,17 @@ class HygieneChecker:
                     message = f"`{target}` is not public: import from `{_subpackage_of(target)}`"
                     yield Violation(file.path, node.lineno, "H16", message)
 
+    def _unsafe_torch_loads(self, file: SourceFile, tree: ast.Module) -> Iterator[Violation]:
+        bindings = _import_bindings(tree)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and _resolved_name(node.func, bindings) in TORCH_LOADERS
+                and not _passes_weights_only_true(node)
+            ):
+                message = "`torch.load` must be called with the literal `weights_only=True`"
+                yield Violation(file.path, node.lineno, "H16", message)
+
     def _imported_modules(self, node: ast.AST) -> Iterator[str]:
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -166,6 +180,38 @@ class HygieneChecker:
                 submodule = f"{node.module}.{alias.name}"
                 if submodule in self._known_modules:
                     yield submodule
+
+
+def _import_bindings(tree: ast.Module) -> dict[str, str]:
+    bindings: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".")[0]
+                bindings[alias.asname or root] = alias.name if alias.asname else root
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            for alias in node.names:
+                bindings[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    return bindings
+
+
+def _resolved_name(expression: ast.expr, bindings: dict[str, str]) -> str | None:
+    attributes: list[str] = []
+    while isinstance(expression, ast.Attribute):
+        attributes.append(expression.attr)
+        expression = expression.value
+    if not isinstance(expression, ast.Name) or expression.id not in bindings:
+        return None
+    return ".".join([bindings[expression.id], *reversed(attributes)])
+
+
+def _passes_weights_only_true(call: ast.Call) -> bool:
+    return any(
+        keyword.arg == WEIGHTS_ONLY_KEYWORD
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value is True
+        for keyword in call.keywords
+    )
 
 
 def _top_level_statements(statements: list[ast.stmt]) -> Iterator[ast.stmt]:

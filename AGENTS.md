@@ -51,6 +51,7 @@ A change is finished only when all of these hold:
 - ruff and ruff-format;
 - mypy and import-linter as local hooks (`entry: uv run mypy src` and `entry: uv run lint-imports`, `language: system`, `pass_filenames: false`), so they see the project environment. They run in pre-commit rather than in a test because both are whole-project checks that need no fixtures, and a hook fails the commit before the code is shared;
 - `detect-secrets` and `nbstripout`;
+- a local `notebook-loader-ban` hook: `ruff check --select TID251` on `notebooks/*.ipynb`, so the H16 loader bans apply to notebooks (H15);
 - a commit-msg hook that rejects a commit touching `src/` without a `CHANGELOG.md` change, unless its type is one of the exempt types in item 3. It checks the staged files only, so an `--amend` that adds `src/` files must stage the `CHANGELOG.md` entry again. Install it with `pre-commit install --hook-type pre-commit --hook-type commit-msg`.
 
 Every hook repo is pinned to a commit SHA with a `# frozen: <tag>` comment (`pre-commit autoupdate --freeze`). The ruff hook's SHA is that of the tag equal to the ruff version in `uv.lock`. detect-secrets flags the SHAs, so `.secrets.baseline` records them as audited false positives (`is_secret: false`); after an autoupdate, rescan with `detect-secrets scan --baseline .secrets.baseline` and mark the new SHAs the same way.
@@ -90,6 +91,7 @@ Rationale that has no external source goes into a name (`stable_log_softmax`, `p
 - a string or bytes statement that is neither a docstring nor an attribute docstring;
 - `while True` (H4);
 - in `src/` only, a module that defines public top-level functions and no classes (also counting those under a top-level `if` or `try`) but lacks the `Functional module:` line (H3); `__init__.py` is exempt;
+- the `torch.load` rule of H16 (every call passes the literal `weights_only=True`);
 - the import rules of H16 that import-linter does not cover. They apply to `src/` and to tests: a test under `tests/<pkg>/` counts as part of subpackage `<pkg>`.
 
 ### H2. Single Responsibility Principle
@@ -204,12 +206,12 @@ Raise specific exceptions. Each subpackage defines its own in `errors.py`, deriv
 
 ### H15. Notebooks
 
-Notebooks live in `notebooks/` and are for exploration only. They are excluded from ruff and never imported. Their outputs are stripped before commit (`nbstripout`), so no raw message text reaches git. Logic the pipeline needs moves into `src/` with tests.
+Notebooks live in `notebooks/` and are for exploration only. They are excluded from ruff and never imported. Their outputs are stripped before commit (`nbstripout`), so no raw message text reaches git. Logic the pipeline needs moves into `src/` with tests. The H16 loader bans and the `weights_only=True` rule bind notebooks too, even though ruff excludes them: the `notebook-loader-ban` pre-commit hook runs `ruff check --select TID251` on the notebooks (explicit paths bypass the exclusion), and the `weights_only` rule is left to review there.
 
 ### H16. Pipeline and ML
 
 - **DVC.** A stage is a pure function of its declared `deps`, `params` and `outs`; it reads no path it has not declared. `dvc.lock` is committed. Metrics go through DVCLive (D5).
-- **Models and downloads.** Every Hugging Face model and dataset id in `params.yaml` has a pinned `revision`. `trust_remote_code=True` is not allowed. Weights load from safetensors, or with `torch.load(..., weights_only=True)`.
+- **Models and downloads.** Every Hugging Face model and dataset id in `params.yaml` has a pinned `revision`. `trust_remote_code=True` is not allowed. Weights load from safetensors, or with `torch.load(..., weights_only=True)`. The `weights_only` rule needs `torch>=2.15.0`: GHSA-v32g-mr63-3j83 (a file read through `weights_only` loading) affected 2.14.x and is fixed in 2.15.0, so the torch range in `pyproject.toml` never goes below it. The loaders behind CVE-2026-136426..136433 (ZDI-26-1052..1059, rejected upstream as expected behaviour, so no fix will come) are banned and the risk is accepted permanently: `torch.export.load` and `torch.export.pt2_archive`, `torch._inductor.aoti_load_package` and `torch._inductor.package`, `torch._export.aot_load`, `torch._C._aoti.AOTIModelPackageLoader`, `torch.hub.load` and `torch.hub.load_state_dict_from_url`, the `torch.utils.model_zoo` module (it re-exports the hub loader as `load_url`, CVE-2026-136431) and the `torch.distributed.checkpoint` module and `torch.compiler.load_compiled_function`. Two loaders outside the CVE set are banned for the same reason: `torch.compiler.load_cache_artifacts` (unpickles cache artifacts) and the `torch.package` module (`PackageImporter` runs shipped code). `torch.jit.load` is not banned. Ruff `TID251` enforces the list through `[tool.ruff.lint.flake8-tidy-imports.banned-api]`, and `tests/test_banned_torch_loaders.py` checks that each name is flagged and still exists in the installed torch. `banned-api` cannot see keyword arguments, so the hygiene test (`tests/hygiene_checker.py`) separately requires every call that resolves to `torch.load` or `torch.serialization.load` (through `import torch`, `from torch import load`, aliases) to pass the literal `weights_only=True`: a bare call, `weights_only=False` or a non-literal value fails, because `TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD` can turn a bare call into a full unpickle. These bans are a lint guard for honest code: dynamic access through `getattr` or `importlib` is not detected, and review catches it.
 - **PyTorch.** Device and dtype are passed in, never hard-coded (`.cuda()` is not allowed), so code runs on the Pi too. Inference and metric computation run under `torch.inference_mode()`. Steps that fit parameters on predictions, such as temperature scaling (D9), do not. `forward` has no side effects.
 - **Polars and DuckDB.** Prefer lazy frames and expressions. SQL is parameterized; never build it with f-strings from data. No `.to_pandas()` on the full message pool.
 - **Language model calls.** Every judge call goes through the call cache (D24), with a timeout, bounded retries and the budget stop. Every HTTP client sets an explicit timeout.
@@ -263,6 +265,7 @@ Ruff, in `pyproject.toml`:
   - `D105`, `D107`, `D417`: see H9.
 - **`tests/**`:** also ignore `S101`, `PLR2004`, `D`, `ARG`, `ANN`, and `RUF001`–`RUF003`, because moderation fixtures contain homoglyphs and typographic quotes on purpose.
 - `S311` stays on: stdlib `random` is not used (H12).
+- **`flake8-tidy-imports`:** `banned-api` lists the torch loaders banned by H16 (`TID251`).
 - **`pep8-naming`:** `ignore-names` covers ML idiom: `X`, `X_*`, `F` (as in `import torch.nn.functional as F`).
 - **`notebooks/`:** excluded.
 

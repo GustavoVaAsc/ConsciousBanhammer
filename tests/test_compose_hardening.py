@@ -90,3 +90,9 @@ def test_work_hides_dotenv_and_mounts_git_read_only() -> None:
     volumes = services()["work"]["volumes"]
     assert "./.git:/workspace/.git:ro" in volumes
     assert "/dev/null:/workspace/.env:ro" in volumes
+
+
+@pytest.mark.parametrize("name", ["judge", "work"])
+def test_gpu_service_reserves_exactly_one_gpu(name: str) -> None:
+    (device,) = services()[name]["deploy"]["resources"]["reservations"]["devices"]
+    assert device == {"driver": "nvidia", "count": 1, "capabilities": ["gpu"]}

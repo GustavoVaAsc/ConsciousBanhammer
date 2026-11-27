@@ -404,3 +404,40 @@ def test_checker_built_from_scanned_files_catches_a_cross_subpackage_import(
     checker = HygieneChecker.for_files(files)
     found = [v for file in files for v in checker.check(file)]
     assert [(v.path, v.rule) for v in found] == [("src/banhammer/rules/atomize.py", "H16")]
+
+
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        "import torch\ntorch.load(path, weights_only=True)\n",
+        "import torch\ntorch.load(path, map_location='cpu', weights_only=True)\n",
+        "from torch import load\nload(path, weights_only=True)\n",
+        "import torch.serialization\ntorch.serialization.load(path, weights_only=True)\n",
+        "import json\njson.load(handle)\n",
+        "def load(handle): ...\nload(handle)\n",
+        "import mylib\nmylib.torch.load(handle)\n",
+    ],
+)
+def test_torch_load_with_literal_weights_only_true_passes(snippet: str) -> None:
+    assert rules_found(snippet) == []
+
+
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        "import torch\ntorch.load(path)\n",
+        "import torch\ntorch.load(path, weights_only=False)\n",
+        "import torch\ntorch.load(path, weights_only=flag)\n",
+        "import torch\ntorch.load(path, **options)\n",
+        "import torch as t\nt.load(path)\n",
+        "from torch import load\nload(path)\n",
+        "from torch import load as read_weights\nread_weights(path, weights_only=False)\n",
+        "import torch.serialization\ntorch.serialization.load(path)\n",
+        "import torch.serialization as serialization\nserialization.load(path)\n",
+        "from torch import serialization\nserialization.load(path, weights_only=False)\n",
+        "from torch.serialization import load\nload(path)\n",
+        "def read():\n    import torch\n    return torch.load(path)\n",
+    ],
+)
+def test_torch_load_without_literal_weights_only_true_is_rejected(snippet: str) -> None:
+    assert rules_found(snippet) == ["H16"]

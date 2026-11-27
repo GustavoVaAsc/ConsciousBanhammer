@@ -30,6 +30,12 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+      - id: notebook-loader-ban
+        name: banned torch loaders in notebooks
+        entry: uv run ruff check --select TID251
+        language: system
+        files: ^notebooks/
+        types: [jupyter]
       - id: changelog-entry
         name: changelog entry for src changes
         entry: uv run python scripts/check_changelog_entry.py
