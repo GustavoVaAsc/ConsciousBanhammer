@@ -54,3 +54,10 @@ VALID_SEVERITIES: Mapping[Verdict, frozenset[int]] = MappingProxyType(
 VERDICT_ORDINALS: Mapping[Verdict, int] = MappingProxyType(
     {verdict: ordinal for ordinal, verdict in enumerate(Verdict)}
 )
+
+
+class Language(StrEnum):
+    """Languages of the project: every ruleset and every kept message is English or Spanish."""
+
+    EN = "en"
+    ES = "es"

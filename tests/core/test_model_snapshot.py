@@ -8,7 +8,7 @@ from huggingface_hub.utils import filter_repo_objects
 
 from banhammer.core import model_snapshot
 from banhammer.core.errors import BanhammerError, ModelSnapshotError
-from banhammer.core.model_snapshot import download_snapshot
+from banhammer.core.model_snapshot import download_snapshot, verify_snapshot
 
 REVISION = "ab" * 20
 PICKLE_FILES = ["model.bin", "2_Dense/pytorch_model.bin", "weights.pt", "state.pkl", "model.pth"]
@@ -96,3 +96,51 @@ def test_a_snapshot_of_allowed_files_only_is_accepted(
     (tmp_path / "1_Pooling").mkdir()
     monkeypatch.setattr(model_snapshot, "snapshot_download", snapshot_at(tmp_path))
     assert download_snapshot("org/model", REVISION) == tmp_path
+
+
+@pytest.mark.parametrize("stale", PICKLE_FILES)
+def test_verify_snapshot_rejects_any_file_outside_the_allowed_patterns(
+    tmp_path: Path, stale: str
+) -> None:
+    for name in [*WANTED_FILES, stale]:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_bytes(b"x")
+    with pytest.raises(ModelSnapshotError, match=stale):
+        verify_snapshot(tmp_path)
+
+
+def test_verify_snapshot_accepts_allowed_files_and_an_empty_directory(tmp_path: Path) -> None:
+    verify_snapshot(tmp_path)
+    for name in WANTED_FILES:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_bytes(b"x")
+    verify_snapshot(tmp_path)
+
+
+def test_verify_snapshot_rejects_a_path_that_is_not_a_directory(tmp_path: Path) -> None:
+    with pytest.raises(ModelSnapshotError, match="not a directory"):
+        verify_snapshot(tmp_path / "missing")
+
+
+def test_verify_snapshot_rejects_a_symlinked_directory_that_could_hide_a_pickle(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "pytorch_model.bin").write_bytes(b"x")
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    (snapshot / "model.safetensors").write_bytes(b"x")
+    (snapshot / "hidden").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ModelSnapshotError, match=r"symlink.*hidden"):
+        verify_snapshot(snapshot)
+
+
+def test_verify_snapshot_allows_symlinked_files_as_in_the_hub_cache(tmp_path: Path) -> None:
+    blobs = tmp_path / "blobs"
+    blobs.mkdir()
+    (blobs / "abc").write_bytes(b"x")
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    (snapshot / "model.safetensors").symlink_to(blobs / "abc")
+    verify_snapshot(snapshot)

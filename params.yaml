@@ -13,3 +13,19 @@ embedder:
   revision: 836121a0533e5664b21c7aacc5d22951f2b8b25b  # pragma: allowlist secret
   batch_size: 64
   max_seq_length: 256
+rules:
+  rulesets_dir: data/rules/rulesets
+  output_dir: data/rules/processed
+  review_dir: data/rules/review
+  neighbours_k: 10
+  neighbours_min_cosine: 0.4
+  neighbours_chunk_size: 1024
+  entail_high: 0.8
+  entail_low: 0.2
+  diameter_max: 0.5
+  saturation_step: 10
+  nli:
+    model: MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7
+    revision: b5113eb38ab63efdd7f280f8c144ea8b13f978ce  # pragma: allowlist secret
+    batch_size: 32
+    max_length: 256

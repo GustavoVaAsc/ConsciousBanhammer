@@ -231,9 +231,9 @@ Notebooks live in `notebooks/` and are for exploration only. They are excluded f
 
 ```
 src/banhammer/
-  core/          constants, errors, settings, records, seeding, union-find, model snapshot (the one safe path for Hugging Face downloads)
+  core/          constants, errors, settings, records, seeding, union-find, atomic file writes, model snapshot (the one safe path for Hugging Face downloads, and the allow-list check every model load runs)
   embeddings/    shared LaBSE embedder and exact neighbour search (D13-D15)
-  rules/         S1 rule corpus: harvest, atomize, canonicalize
+  rules/         S1 rule corpus: curated YAML rulesets, atomize, candidates, canonicalize, review files
   messages/      S2 message pool: ingest, language ID, dedup, sampling
   pairing/       S3 pairs, folds, split invariants
   labeling/      S4 judge cascade, call cache, calibration gate
@@ -244,7 +244,7 @@ src/banhammer/
 scripts/         pre-commit helper scripts (commit-msg changelog gate); tests/scripts/ covers them
 tests/           mirrors src/banhammer/
 notebooks/       exploration only
-docs/            proposal, reviews, dependencies.md, docker.md, workstreams.md
+docs/            proposal, reviews, dependencies.md, docker.md, rules.md, workstreams.md
 docker/          judge reverse-proxy configuration (nginx)
 Dockerfile       project image for the GPU box (D3; installs with uv sync --locked)
 compose.yaml     judge and work services, build context is the repository root
