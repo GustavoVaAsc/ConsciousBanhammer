@@ -6,7 +6,7 @@ Three services in `compose.yaml` (decisions D3, D6, D27; background in `docs/rev
 |---|---|---|---|
 | `judge` | `judge` | `vllm/vllm-openai` (pinned) | Local judge: Qwen2.5-7B-Instruct-AWQ with structured outputs and prefix caching. No published port, reachable only on the isolated internal network `judge_net` |
 | `judge-proxy` | `judge` | `nginxinc/nginx-unprivileged` (pinned) | The only way in: publishes `127.0.0.1:8000`, forwards `/v1/*` and `/health`, rejects everything else, any unexpected `Host` header and any ambiguous URI. Starts only once the judge is healthy. Config: `docker/judge-proxy.conf` |
-| `work` | `train` | built from `Dockerfile` | Project environment: CUDA 12.8 runtime, uv, the locked venv in `/opt/venv`, the repository bind-mounted at `/workspace` |
+| `work` | `train` | built from `Dockerfile` | Project environment: CUDA 13.2 runtime, uv, the locked venv in `/opt/venv`, the repository bind-mounted at `/workspace` |
 
 ## Setup
 
@@ -65,6 +65,7 @@ docker compose --profile train run --rm work uv run dvc repro
 - `.git` is mounted read-only and `.env` is replaced by an empty file, so a process in the container (or a dependency it runs) cannot rewrite history or read the keys. Create `.env` before the first `run`; Docker would otherwise create the mount point as root. `dvc repro` works inside the container (checked with the empty pipeline). **`dvc exp run` and anything else that writes Git refs or commits runs on the host**, not in the container.
 - `work` is on the default network; the judge is reachable from it only as `http://judge-proxy:8080/v1` (`JUDGE_URL`), and only if the judge profile is deliberately up, which D27 forbids while training. Because `.env` is hidden, the key would have to be passed explicitly.
 - `shm_size: 8gb` is for `DataLoader` workers; Docker's default of 64 MB crashes them.
+- `judge` and `work` each reserve one GPU (`count: 1`), not all of them; `tests/test_compose_hardening.py` checks it.
 - Rebuild after any change to `pyproject.toml` or `uv.lock`. Only those two files are in the build context (`.dockerignore`).
 
 ## Tunables (H7)
@@ -77,16 +78,24 @@ Every image is pinned by tag and by digest. The digests are multi-arch index dig
 
 | Image | Tag | Digest | Why |
 |---|---|---|---|
-| `vllm/vllm-openai` | `v0.34.0` | `sha256:20fdb089454afbb324efa4110a2c025ff7b27cc1a086e07aa580b18df8ad1ce1` | Latest stable release (2026-11-16). CUDA 13.0.2 image with `TORCH_CUDA_ARCH_LIST` including 12.0 (sm_120). Host driver 580.159.03 supports CUDA 13.0 |
-| `nvidia/cuda` | `12.8.1-cudnn-runtime-ubuntu24.04` | `sha256:ac55d124da4882b497f732d8dfd9a702d5447a5f29d08d56da6f64f0a1eb34bc` | Matches the `cu128` torch wheels in `uv.lock` |
+| `vllm/vllm-openai` | `v0.34.0` | `sha256:20fdb089454afbb324efa4110a2c025ff7b27cc1a086e07aa580b18df8ad1ce1` | Latest stable release (2026-11-16). CUDA 13.0.2 image with `TORCH_CUDA_ARCH_LIST` including 12.0 (sm_120). The host driver must not be affected by NVIDIA bulletin 5861: see "Host driver" |
+| `nvidia/cuda` | `13.2.1-cudnn-runtime-ubuntu24.04` | `sha256:1c0c68dbf3258d32b446a02cb4be05c8478b65d320d7856ad33c4bbdf898ca86` | Matches the `cu132` torch wheels in `uv.lock` (torch 2.15 pins `cuda-toolkit==13.2.2`; 13.2.1 is the newest 13.2 `cudnn-runtime` tag). The wheels bring their own CUDA libraries, so the image supplies the base OS and the driver-compatibility check (`NVIDIA_REQUIRE_CUDA` accepts driver 580). `apt-get upgrade -y` in the `Dockerfile` brings the OS layer (built 2026-04) up to date at each build |
 | `ghcr.io/astral-sh/uv` | `0.12.0` | `sha256:606e70c71c852d03f611b1e56a195d08648507018a7057fab82c4974c4eae105` | Same uv as the one that wrote `uv.lock` and as the `uv_build` range in `pyproject.toml` (`>=0.12.0,<0.13`) |
 | `nginxinc/nginx-unprivileged` | `1.30.6-alpine` | `sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03` | Stable branch (2026-10-19), 26 MB, runs as uid 101 on port 8080 so it works with all capabilities dropped and a read-only root. nginx expresses the path allow-list and the exact `Host` check declaratively; Caddy would do the same but needs more configuration for strict `Host` rejection |
 | `Qwen/Qwen2.5-7B-Instruct-AWQ` | revision `b25037543e9394b818fdfca67ab2a00ecc7dd641` | n/a | `main` on 2026-11-25 (last modified 2024-10-09), Apache-2.0, safetensors |
 
+### Host driver
+
+Recorded host driver: **595.104.02**, open kernel module (`nvidia-smi` reports CUDA 13.2), installed 2026-11-26. Update this line whenever the driver changes.
+
+- **Minimum safe driver.** NVIDIA security bulletin 5861 (2026-09-30) covers CVE-2026-47501, an out-of-bounds write in the kernel driver that lets a container escalate to the host through `/dev/nvidia*`. Fixed releases per branch: R580 580.178.04, 595.91.07, 610.57.04, 615.71.09 (the list `tests/test_nvidia_driver.py` checks). The box was on 580.159.03, which is affected; on Pop!_OS, `sudo apt install --only-upgrade nvidia-driver-580-open` moved it to 595.104.02, because Pop's 580.178.04 `nvidia-driver-580-open` is a transition package that depends on `nvidia-driver-595-open` (upgrading only `system76-driver-nvidia` does not change the driver). Do not run GPU containers (`work`, `judge`) on an affected driver; the `gpu`-marked driver test fails on one; `cap_drop` and `no-new-privileges` do not protect against a kernel bug reached through the device nodes.
+- The `cu132` torch wheels and the CUDA 13.2 base image run natively on the 595 driver (CUDA 13.2); the vLLM image (CUDA 13.0) runs on it as an older 13.x runtime. On an R580 driver (native CUDA 13.0) they ran through CUDA minor-version compatibility within the 13.x family, checked on 580.159.03. After any driver change, rerun the GPU check (`torch.cuda.is_available()`, the arch list with sm_120, a CUDA matmul) in `work`.
+- At each milestone, check the driver version against the NVIDIA security bulletins (NVIDIA PSIRT, https://www.nvidia.com/en-us/security/) and note the date in `docs/dependencies.md`, "Advisory checks".
+
 ### Bumping a pin
 
 1. **vLLM.** Read the release notes for changes to defaults and to the structured-output and AWQ paths, check the Docker table for the CUDA version, and confirm the driver in `nvidia-smi` supports it. Pull the new tag, copy its digest (`docker image inspect --format '{{.Id}}'` gives the index digest of a freshly pulled multi-arch tag), edit `compose.yaml`, and rerun the smoke test: the smoke list below.
-2. **CUDA base.** Keep the minor version equal to the torch wheel index (`cu128` in `pyproject.toml`). Edit the `FROM` line, rebuild, run the GPU check and the tests above.
+2. **CUDA base.** Keep the minor version equal to the torch wheel index (`cu132` in `pyproject.toml`). Edit the `FROM` line, rebuild, run the GPU check and the tests above. When the torch index moves to a new CUDA minor, check first that the host driver supports it (see "Host driver").
 3. **uv.** Change the `COPY --from` line together with the `uv_build` range in `pyproject.toml`; rebuild so `uv sync --locked` verifies the lockfile.
 4. **nginx.** Edit the tag and digest in `compose.yaml`; rerun the path, URI and `Host` checks below.
 5. **Qwen revision.** Take the commit hash from `https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct-AWQ`, set it in `params.yaml` and in both `--revision` flags of `compose.yaml`, prefetch it with the `hf download` command, and note that labels produced under the old revision are not reproducible with the new one.
@@ -105,9 +114,19 @@ With the judge profile up and `KEY` taken from `.env` (do not print it):
 - `docker compose --profile judge logs judge | grep -c -F "$KEY"` prints 0.
 - Prefix caching and the metrics: `/metrics` is blocked by the proxy, so read `vllm:prefix_cache_hits_total` from inside: `docker compose --profile judge exec judge python3 -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/metrics').read().decode())"`.
 
+## Rebuilding the `work` image
+
+`apt-get upgrade -y` in the `Dockerfile` pulls the newest OS packages at build time, so two builds of the same `Dockerfile` can differ: the image is not reproducible from the repository alone (the base image digest, the uv digest and `uv.lock` still are). The trade-off is accepted so that OS security fixes arrive without waiting for a new base image. The apt layer is cached like any other, so a plain `build` reuses the old packages. To pick up OS fixes run:
+
+```
+docker compose --profile train build --pull --no-cache work
+```
+
+Rebuild this way at each milestone (it re-downloads the uv cache, about seven minutes) and after any bulletin that names a package in the image.
+
 ## Disk
 
-The vLLM image is about 36 GB unpacked, `work` about 19 GB, the Qwen weights 5.6 GB. The Docker build cache keeps the uv download cache (several GB); `docker builder prune` reclaims it, at the cost of a seven-minute rebuild of `work`.
+The vLLM image is about 36 GB unpacked, `work` about 18 GB, the Qwen weights 5.6 GB. The Docker build cache keeps the uv download cache (several GB); `docker builder prune` reclaims it, at the cost of a seven-minute rebuild of `work`.
 
 ## Known behaviour
 

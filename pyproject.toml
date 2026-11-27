@@ -15,7 +15,7 @@ dependencies = [
     "pydantic>=2.14",
     "pyyaml>=6.0",
     "sentence-transformers>=6.3.0",
-    "torch>=2.11,<2.12",
+    "torch>=2.15,<2.16",
 ]
 
 [project.optional-dependencies]
@@ -42,13 +42,13 @@ environments = [
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cu128", marker = "platform_machine == 'x86_64'" },
+    { index = "pytorch-cu132", marker = "platform_machine == 'x86_64'" },
     { index = "pytorch-cpu", marker = "platform_machine == 'aarch64'" },
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
 explicit = true
 
 [[tool.uv.index]]
@@ -83,6 +83,21 @@ ignore-names = ["X", "X_*", "F"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"torch.export.load".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.export.pt2_archive".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch._inductor.aoti_load_package".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch._inductor.package".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch._export.aot_load".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch._C._aoti.AOTIModelPackageLoader".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.hub.load".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.hub.load_state_dict_from_url".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.distributed.checkpoint".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.compiler.load_compiled_function".msg = "Loads untrusted pickled or compiled artifacts: CVE-2026-136426..136433 (ZDI-26-1052..1059, won't fix upstream, H16)"
+"torch.utils.model_zoo".msg = "Re-exports torch.hub.load_state_dict_from_url as load_url: CVE-2026-136431 (ZDI-26-1058, won't fix upstream, H16)"
+"torch.compiler.load_cache_artifacts".msg = "Unpickles cache artifacts and is not in the CVE set: AGENTS.md H16"
+"torch.package".msg = "PackageImporter runs code shipped inside the package and is not in the CVE set: AGENTS.md H16"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004", "D", "ARG", "ANN", "RUF001", "RUF002", "RUF003"]
